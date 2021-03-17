@@ -1,3 +1,4 @@
+boto3
 pylint
 pylint_junit
 pytest
