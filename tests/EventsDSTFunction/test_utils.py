@@ -1,31 +1,10 @@
-import contextlib
-
-import boto3
 from freezegun import freeze_time
 from moto import mock_events
 import pytz
 
 from events_dst import utils
+from .utils import events_rules
 
-
-@contextlib.contextmanager
-def events_rules(suffixes=[]):
-    """
-    Create some event rules, some scheduled and some not.
-
-    Args
-        suffixes (List[str]): list of suffixes to use for some events.
-    Yields:
-        obj: events client.
-    """
-    conn = boto3.client('events', region_name='us-east-1')
-    for suffix in ['', *suffixes]:
-        conn.put_rule(Name=f'pattern-foo{suffix}', EventPattern='{ "foo": [ 1 ] }')
-        conn.put_rule(Name=f'pattern-bar{suffix}', EventPattern='{ "bar": [ 1, 2 ] }')
-        conn.put_rule(Name=f'schedule-foo{suffix}', ScheduleExpression="cron(0 1 * * ? *)")
-        conn.put_rule(Name=f'schedule-bar{suffix}', ScheduleExpression="cron(0 2 * * ? *)")
-
-    yield conn
 
 @freeze_time('2021-01-01 01:02:03')
 class TestLocalNow:
