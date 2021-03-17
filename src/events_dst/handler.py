@@ -92,3 +92,15 @@ def _handle_transition(enable, disable, _evt_clnt=evt_clnt):
                 )
         except Exception: # pylint: disable=broad-except
             logger.exception('Exception transitioning rule %(name)s', { 'name': rule_name })
+
+def lambda_handler(event, context): # pylint: disable=unused-argument
+    """ AWS Lambda Handler entrypoint. """
+    if event.get('detail') and event['detail'].get('requestParameters'):
+        _handle_create(rule=event['detail']['requestParameters'])
+    elif event.get('enable') and event.get('disable'):
+        _handle_transition(
+            enable=event['enable'],
+            disable=event['disable'],
+        )
+    else:
+        logger.error('Unknown event: %(event)r', { 'event': event })

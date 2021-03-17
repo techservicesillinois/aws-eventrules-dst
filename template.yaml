@@ -10,6 +10,16 @@ Globals:
     Timeout: 120
 
 Parameters:
+  LocalTimezone:
+    Type: String
+    Description: Local timezone name.
+    Default: US/Central
+    AllowedValues:
+      - US/Eastern
+      - US/Central
+      - US/Mountain
+      - US/Pacific
+
   LambdaMonitorTemplateURL:
     Type: String
     Description: URL to the template for Lambda monitoring.
@@ -27,8 +37,34 @@ Parameters:
     Description: ARN to encrypt Logs with.
     Default: ""
 
+Mappings:
+  TimezoneMap:
+    US/Eastern:
+      Abbrevs: EDT,EST
+      STDAbbrev: EST
+      DSTAbbrev: EDT
+      STDTransition: cron(1 6 ? NOV SUN#1 *)
+      DSTTransition: cron(1 7 ? MAR SUN#2 *)
+    US/Central:
+      Abbrevs: CDT,CST
+      STDAbbrev: CST
+      DSTAbbrev: CDT
+      STDTransition: cron(1 7 ? NOV SUN#1 *)
+      DSTTransition: cron(1 8 ? MAR SUN#2 *)
+    US/Mountain:
+      Abbrevs: MDT,MST
+      STDAbbrev: MST
+      DSTAbbrev: MDT
+      STDTransition: cron(1 8 ? NOV SUN#1 *)
+      DSTTransition: cron(1 9 ? MAR SUN#2 *)
+    US/Pacific:
+      Abbrevs: PDT,PST
+      STDAbbrev: PST
+      DSTAbbrev: PDT
+      STDTransition: cron(1 9 ? NOV SUN#1 *)
+      DSTTransition: cron(1 10 ? MAR SUN#2 *)
+
 Conditions:
-  HasLogSubscription: !Not [ !Equals [ !Ref LogSubscriptionARN, "" ] ]
   HasLogEncryption: !Not [ !Equals [ !Ref LogKMSKeyARN, "" ] ]
   HasLambdaMonitor: !Not [ !Equals [ !Ref LambdaMonitorTemplateURL, "" ] ]
 
@@ -40,16 +76,59 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-EventsDST"
       CodeUri: src/
-      Handler: app.lambda_handler
+      Handler: events_dst.handler.lambda_handler
       Environment:
         Variables:
-          # Key: value environment variable pairs...
+          TZ: !Ref LocalTimezone
+          TZ_ABBREVS: !FindInMap [ TimezoneMap, !Ref LocalTimezone, Abbrevs ]
       Policies:
-        # List of SAM Policy Templates, Managed Policy names, etc
-        # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
+        - Statement:
+            - Effect: Allow
+              Action: 'events:ListRules'
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - 'events:EnableRule'
+                - 'events:DisableRule'
+              Resource:
+                - !Sub
+                  - "arn:aws:events:${Region}:${AccountId}:rule/*-${Suffix}"
+                  - Region: !Ref "AWS::Region"
+                    AccountId: !Ref "AWS::AccountId"
+                    Suffix: !FindInMap [ TimezoneMap, !Ref LocalTimezone, STDAbbrev ]
+                - !Sub
+                  - "arn:aws:events:${Region}:${AccountId}:rule/*-${Suffix}"
+                  - Region: !Ref "AWS::Region"
+                    AccountId: !Ref "AWS::AccountId"
+                    Suffix: !FindInMap [ TimezoneMap, !Ref LocalTimezone, DSTAbbrev ]
       Events:
-        # Directionary of events that trigger this function
-        # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html
+        CreateEventRule:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source: [ "aws.events" ]
+              detail-type: [ "AWS API Call via CloudTrail" ]
+              detail:
+                eventSource: [ "events.amazonaws.com" ]
+                eventName: [ "PutRule" ]
+        STDTransition:
+          Type: Schedule
+          Properties:
+            Description: Transition to standard time rules.
+            Schedule: !FindInMap [ TimezoneMap, !Ref LocalTimezone, STDTransition ]
+            Input: !Sub
+              - "{ \"enable\": \"${STD}\", \"disable\": \"${DST}\" }"
+              - STD: !FindInMap [ TimezoneMap, !Ref LocalTimezone, STDAbbrev ]
+                DST: !FindInMap [ TimezoneMap, !Ref LocalTimezone, DSTAbbrev ]
+        DSTTransition:
+          Type: Schedule
+          Properties:
+            Description: Transition to daylight savings time rules.
+            Schedule: !FindInMap [ TimezoneMap, !Ref LocalTimezone, DSTTransition ]
+            Input: !Sub
+              - "{ \"enable\": \"${DST}\", \"disable\": \"${STD}\" }"
+              - STD: !FindInMap [ TimezoneMap, !Ref LocalTimezone, STDAbbrev ]
+                DST: !FindInMap [ TimezoneMap, !Ref LocalTimezone, DSTAbbrev ]
   EventsDSTFunctionLogs:
     Type: AWS::Logs::LogGroup
     Properties:
