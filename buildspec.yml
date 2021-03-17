@@ -1,0 +1,27 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+        python: 3.8
+    commands:
+      - pip install --upgrade pip
+      - pip install awscli aws-sam-cli
+      - pip install -r tests/requirements.txt
+      - mkdir pytest-reports
+      - mkdir pylint-reports
+  build:
+    commands:
+      - sam build
+      - pytest --junitxml=pytest-reports/EventsDSTFunction.xml --rootdir=tests/EventsDSTFunction/
+      - pylint --load-plugins=pylint_junit --output-format=junit .aws-sam/build/EventsDSTFunction/ > pylint-reports/EventsDSTFunction.xml
+      - sam package --s3-bucket $PACKAGE_BUCKET --s3-prefix $PACKAGE_PREFIX --output-template-file packaged-template.yml
+reports:
+  pytest-report:
+    files:
+      - pytest-reports/*
+  pylint-report:
+    files:
+      - pylint-reports/*
+artifacts:
+  files:
+    - packaged-template.yml
