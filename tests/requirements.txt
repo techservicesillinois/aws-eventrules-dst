@@ -1,0 +1,6 @@
+pylint
+pylint_junit
+pytest
+pytest-mock
+moto
+freezegun

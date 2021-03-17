@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Function to handle EventBridge Event rules for daylight savings time.
+
+Globals:
+  Function:
+    Runtime: python3.8
+    MemorySize: 128
+    Timeout: 120
+
+Parameters:
+  LambdaMonitorTemplateURL:
+    Type: String
+    Description: URL to the template for Lambda monitoring.
+    Default: ""
+  LambdaMonitorAlarmTopicARN:
+    Type: String
+    Description: ARN of the SNS Topic that receives alarm notifications.
+    Default: ""
+  LogSubscriptionARN:
+    Type: String
+    Description: ARN to subscribe CloudWatchLogs to.
+    Default: ""
+  LogKMSKeyARN:
+    Type: String
+    Description: ARN to encrypt Logs with.
+    Default: ""
+
+Conditions:
+  HasLogSubscription: !Not [ !Equals [ !Ref LogSubscriptionARN, "" ] ]
+  HasLogEncryption: !Not [ !Equals [ !Ref LogKMSKeyARN, "" ] ]
+  HasLambdaMonitor: !Not [ !Equals [ !Ref LambdaMonitorTemplateURL, "" ] ]
+
+Resources:
+  EventsDSTFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - EventsDSTFunctionLogs
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-EventsDST"
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          # Key: value environment variable pairs...
+      Policies:
+        # List of SAM Policy Templates, Managed Policy names, etc
+        # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
+      Events:
+        # Directionary of events that trigger this function
+        # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-eventsource.html
+  EventsDSTFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-EventsDST"
+      RetentionInDays: 30
+      KmsKeyId: !If [ HasLogEncryption, !Ref LogKMSKeyARN, !Ref "AWS::NoValue" ]
+  EventsDSTFunctionMonitor:
+    Type: AWS::CloudFormation::Stack
+    Condition: HasLambdaMonitor
+    Properties:
+      Parameters:
+        FunctionName: !Sub "${AWS::StackName}-EventsDST"
+        LogGroupName: !Ref EventsDSTFunctionLogs
+        LogSubscriptionARN: !Ref LogSubscriptionARN
+        AlarmTopicARN: !Ref LambdaMonitorAlarmTopicARN
+        DurationAlarmThreshold: 96
+      TemplateURL: !Ref LambdaMonitorTemplateURL
