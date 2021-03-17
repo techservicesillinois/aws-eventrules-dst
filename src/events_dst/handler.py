@@ -1,5 +1,4 @@
 """ Lambda handler entrypoints. """
-from datetime import datetime
 import logging
 import os
 
@@ -30,6 +29,7 @@ def _handle_create(rule, _evt_clnt=evt_clnt):
             'name': rule_name,
         })
         return
+    logger.info('Handling new rule %(name)s', { 'name': rule_name })
 
     rule_params = dict(Name=rule_name)
     if rule.get('eventBusName'):
@@ -39,12 +39,12 @@ def _handle_create(rule, _evt_clnt=evt_clnt):
     try:
         if rule_name.lower().endswith(now_suffix):
             if not rule_enabled:
-                 logger.info('Enabling rule %(name)s', { 'name': rule_name })
-                 _evt_clnt.enable_rule(**rule_params)
+                logger.info('Enabling rule %(name)s', { 'name': rule_name })
+                _evt_clnt.enable_rule(**rule_params)
         elif any(map(lambda s: rule_name.lower().endswith(s), RULE_SUFFIXES)):
             if rule_enabled:
-                 logger.info('Disabling rule %(name)s', { 'name': rule_name })
-                 _evt_clnt.disable_rule(**rule_params)
+                logger.info('Disabling rule %(name)s', { 'name': rule_name })
+                _evt_clnt.disable_rule(**rule_params)
         else:
             logger.debug('Ignoring new rule %(name)s that does not match a suffix', {
                 'name': rule_name,
