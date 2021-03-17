@@ -7,3 +7,4 @@ BASE = dirname(dirname(dirname(__file__)))
 sys.path.insert(0, join(BASE, '.aws-sam', 'build', FUNC))
 
 os.environ['TZ'] = 'America/Chicago'
+os.environ['TZ_ABBREVS'] = 'CDT,CST'
