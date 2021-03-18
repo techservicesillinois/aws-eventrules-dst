@@ -68,3 +68,26 @@ There are other internal parameters related to our common configurations:
 `LambdaMonitorTemplateURL`; `LambdaMonitorAlarmTopicARN`; `LogSubscriptionARN`;
 `LogKMSKeyARN`. You do not need to specify these and the lambda should work fine
 without them.
+
+## Development
+
+You can setup your own development environment using virtuan-env:
+
+```bash
+python3.8 -mvenv .venv
+. .venv/bin/activate
+pip install --upgrade pip
+pip install awscli aws-sam-cli
+pip install -r tests/requirements.txt
+```
+
+Every time you make a change to the source code you must run `sam build` before
+running the lint or test commands. This is because the linter and unit tester
+look at the code in `.aws-sam/build/` and **not** the code in `src/`. For
+example:
+
+```bash
+sam build
+pylint .aws-sam/build/EventsDSTFunction/
+pytest -v tests/EventsDSTFunction/
+```
