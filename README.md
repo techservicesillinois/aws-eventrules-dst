@@ -39,6 +39,16 @@ sam build
 sam deploy --guided
 ```
 
+If you want to deploy this with terraform you will need to package it in an
+S3 bucket and then use the packaged template in a terraform
+`aws_cloudformation_stack` resource:
+
+```bash
+sam build
+sam package --s3-bucket my-artifacts-bucket --s3-prefix eventrules-dst \
+    --output-template-file packaged-template.yml
+```
+
 You can also deploy it automatically using CodePipeline and CodeBuild. The
 `buildspec.yml` contains more information about the expected CodeBuild
 environment variables.
