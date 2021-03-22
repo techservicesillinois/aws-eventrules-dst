@@ -60,7 +60,7 @@ each timezone.
 ### Configuration
 
 The only parameter that is configurable is the `LocalTimezone`. You can specify
-these values: `US/Eastern`, `US/Central`, `US/Mountain`, and `US/Pacific`. If
+these values: `US-Eastern`, `US-Central`, `US-Mountain`, and `US-Pacific`. If
 you need a timezone not listed then submit a pull request with the necessary
 changes to the `TimezoneMap` mapping.
 
