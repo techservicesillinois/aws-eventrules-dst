@@ -13,12 +13,12 @@ Parameters:
   LocalTimezone:
     Type: String
     Description: Local timezone name.
-    Default: US/Central
+    Default: US-Central
     AllowedValues:
-      - US/Eastern
-      - US/Central
-      - US/Mountain
-      - US/Pacific
+      - US-Eastern
+      - US-Central
+      - US-Mountain
+      - US-Pacific
 
   LambdaMonitorTemplateURL:
     Type: String
@@ -39,25 +39,29 @@ Parameters:
 
 Mappings:
   TimezoneMap:
-    US/Eastern:
+    US-Eastern:
+      TZ: US/Eastern
       Abbrevs: EDT,EST
       STDAbbrev: EST
       DSTAbbrev: EDT
       STDTransition: cron(1 6 ? NOV SUN#1 *)
       DSTTransition: cron(1 7 ? MAR SUN#2 *)
-    US/Central:
+    US-Central:
+      TZ: US/Central
       Abbrevs: CDT,CST
       STDAbbrev: CST
       DSTAbbrev: CDT
       STDTransition: cron(1 7 ? NOV SUN#1 *)
       DSTTransition: cron(1 8 ? MAR SUN#2 *)
-    US/Mountain:
+    US-Mountain:
+      TZ: US/Mountain
       Abbrevs: MDT,MST
       STDAbbrev: MST
       DSTAbbrev: MDT
       STDTransition: cron(1 8 ? NOV SUN#1 *)
       DSTTransition: cron(1 9 ? MAR SUN#2 *)
-    US/Pacific:
+    US-Pacific:
+      TZ: US/Pacific
       Abbrevs: PDT,PST
       STDAbbrev: PST
       DSTAbbrev: PDT
@@ -79,7 +83,7 @@ Resources:
       Handler: events_dst.handler.lambda_handler
       Environment:
         Variables:
-          TZ: !Ref LocalTimezone
+          TZ: !FindInMap [ TimezoneMap, !Ref LocalTimezone, TZ ]
           TZ_ABBREVS: !FindInMap [ TimezoneMap, !Ref LocalTimezone, Abbrevs ]
       Policies:
         - Statement:
