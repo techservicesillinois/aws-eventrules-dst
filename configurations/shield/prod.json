@@ -1,0 +1,9 @@
+{
+    "Parameters": {
+        "LocalTimezone": "US-Central"
+    },
+    "Tags": {
+        "Service": "Shield",
+        "Environment": "prod"
+    }
+}
