@@ -23,7 +23,7 @@ Parameters:
   LambdaMonitorTemplateURL:
     Type: String
     Description: URL to the template for Lambda monitoring.
-    Default: ""
+    Default: "https://example.org/template.yaml"
   LambdaMonitorAlarmTopicARN:
     Type: String
     Description: ARN of the SNS Topic that receives alarm notifications.
@@ -66,7 +66,7 @@ Mappings:
 
 Conditions:
   HasLogEncryption: !Not [ !Equals [ !Ref LogKMSKeyARN, "" ] ]
-  HasLambdaMonitor: !Not [ !Equals [ !Ref LambdaMonitorTemplateURL, "" ] ]
+  HasLambdaMonitor: !Not [ !Equals [ !Ref LambdaMonitorTemplateURL, "https://example.org/template.yaml" ] ]
 
 Resources:
   EventsDSTFunction:
